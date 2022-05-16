@@ -1,0 +1,37 @@
+#ifndef DEVICE_H
+#define DEVICE_H
+
+#include <stdint.h>
+
+#define IRQ_NUMBER_MAX {{ interrupts[-1].value }}
+enum IRQ_NUMBER {
+{%- for interrupt in interrupts %}
+  {{ interrupt.name}}_IRQ = {{ interrupt.value }}, /* {{ interrupt.description }} */
+{%- endfor %}
+};
+
+{%- for periph in peripherals %}
+struct {{ periph.name }} {
+{%- for reg in periph.registers | sort(attribute="address_offset") %}
+{%- set reserve_count = ((reg.address_offset - (loop.previtem | default(reg)).address_offset) / 4 - 1) | int %}
+{%- if reserve_count > 0 %}
+  const volatile uint32_t RESERVED{{ reg.address_offset }}[{{ reserve_count }}];
+{%- endif %}
+{%- set modifier = "volatile const" if reg.access == "read-only" else "volatile" %}
+  {{ modifier }} uint32_t {{ reg.name }};
+{%- endfor %}
+};
+
+{%- for reg in periph.registers %}
+{%- for field in reg.fields %} {%- set value = (2 ** field.bit_width) - 1 %}
+#define {{ periph.name }}_{{ reg.name }}_{{ field.name }}          (0x{{ "{:X}".format(value) }}UL << {{ field.bit_offset }}) 
+#define {{ periph.name }}_{{ reg.name }}_{{ field.name }}_VAL(X) (((uint32_t)(X) & 0x{{ "{:X}".format(value) }}UL) << {{ field.bit_offset }}) 
+{%- endfor %}
+{%- endfor %}
+
+#define {{ periph.name }}  ((struct {{ periph.name }}*)(0x{{ "{:X}".format(periph.base_address) }}UL))
+
+
+
+{%- endfor %}
+#endif
