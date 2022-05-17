@@ -12,8 +12,16 @@ enum IRQ_NUMBER {
 
 {%- for periph in peripherals %}
 struct {{ periph.name }} {
-{%- for reg in periph.registers | sort(attribute="address_offset") %}
-{%- set reserve_count = ((reg.address_offset - (loop.previtem | default(reg)).address_offset) / 4 - 1) | int %}
+{%- set regs = periph.registers | sort(attribute="address_offset") %}
+{%- for reg in regs %}
+{%- set reserve_count = ((reg.address_offset - loop.previtem.address_offset) / 4 - 1) | int if loop.previtem is defined else 0 %}
+{%- set new_offset = loop.changed(reg.address_offset) %}
+{%- if new_offset and loop.index > 2 and regs[loop.index0 - 1].address_offset == regs[loop.index0 - 2].address_offset %}
+  };
+{%- endif %}
+{%- if new_offset and loop.nextitem is defined and reg.address_offset == loop.nextitem.address_offset %}
+  union {
+{%- endif %}
 {%- if reserve_count > 0 %}
   const volatile uint32_t RESERVED{{ reg.address_offset }}[{{ reserve_count }}];
 {%- endif %}

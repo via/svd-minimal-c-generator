@@ -1,4 +1,4 @@
-from cmsis_svd.parser import SVDParser
+from cmsis_svd.parser import SVDParser, SVDRegister, SVDField
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -20,6 +20,22 @@ def enumerate_interrupts(device):
   interrupts.sort(key=lambda x: x.value)
   return interrupts
 
+class Field:
+  def __init__(self, field: SVDField):
+    self.name = field.name
+    self.description = field.description
+    self.bit_width = field.bit_width
+    self.bit_offset = field.bit_offset
+    self.access = field.access
+
+class Register:
+  def __init__(self, register: SVDRegister):
+    self.name = register.name
+    self.description = register.description
+    self.address_offset = register.address_offset
+    self.fields = [Field(f) for f in register.fields]
+
+
 
 ints = enumerate_interrupts(device)
 env = Environment(loader=FileSystemLoader("templates"))
@@ -29,6 +45,6 @@ open("vectors.c", "w").write(vectors_template.render(interrupts=ints))
 open("device.h", "w").write(device_template.render(interrupts=ints,
 peripherals=device.peripherals))
 
-for p in device.peripherals:
-  if p.registers:
-    print(p.registers[0].fields[0].__dict__)
+#for p in device.peripherals:
+#  r = Register(p.registers[0])
+#  print(r.__dict__)
