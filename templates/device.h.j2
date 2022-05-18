@@ -12,34 +12,34 @@ enum IRQ_NUMBER {
 
 {%- for periph in peripherals %}
 struct {{ periph.name }} {
-{%- set regs = periph.registers | sort(attribute="address_offset") %}
-{%- for reg in regs %}
-{%- set reserve_count = ((reg.address_offset - loop.previtem.address_offset) / 4 - 1) | int if loop.previtem is defined else 0 %}
-{%- set new_offset = loop.changed(reg.address_offset) %}
-{%- if new_offset and loop.index > 2 and regs[loop.index0 - 1].address_offset == regs[loop.index0 - 2].address_offset %}
-  };
-{%- endif %}
-{%- if new_offset and loop.nextitem is defined and reg.address_offset == loop.nextitem.address_offset %}
+{%- for address, locations in periph.locations | dictsort %}
+{%- set indent = "" %}
+{%- if locations | length > 1 %}
+{%- set indent = "  " %}
   union {
 {%- endif %}
-{%- if reserve_count > 0 %}
-  const volatile uint32_t RESERVED{{ reg.address_offset }}[{{ reserve_count }}];
+{%- for loc in locations %}
+{%- set array = "[" + (loc.size | int | string) + "]" if loc.size > 1 else "" %}
+{{ indent }}    {{ loc.modifier }} uint32_t {{ loc.name }}{{ array }};
+{%- endfor %}
+{%- if locations | length > 1 %}
+  };
 {%- endif %}
-{%- set modifier = "volatile const" if reg.access == "read-only" else "volatile" %}
-  {{ modifier }} uint32_t {{ reg.name }};
 {%- endfor %}
 };
 
-{%- for reg in periph.registers %}
-{%- for field in reg.fields %} {%- set value = (2 ** field.bit_width) - 1 %}
+{%- for pos, locations in periph.locations | dictsort %}
+{%- for reg in locations %}
+{%- for field in reg.fields %} 
+{%- set value = (2 ** field.bit_width) - 1 %}
 #define {{ periph.name }}_{{ reg.name }}_{{ field.name }}          (0x{{ "{:X}".format(value) }}UL << {{ field.bit_offset }}) 
 #define {{ periph.name }}_{{ reg.name }}_{{ field.name }}_VAL(X) (((uint32_t)(X) & 0x{{ "{:X}".format(value) }}UL) << {{ field.bit_offset }}) 
+{%- endfor %}
 {%- endfor %}
 {%- endfor %}
 
 #define {{ periph.name }}  ((struct {{ periph.name }}*)(0x{{ "{:X}".format(periph.base_address) }}UL))
 
 
-
-{%- endfor %}
+{% endfor %}
 #endif
