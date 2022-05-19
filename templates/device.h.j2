@@ -20,7 +20,7 @@ struct {{ periph.name }} {
 {%- endif %}
 {%- for loc in locations %}
 {%- set array = "[" + (loc.size | int | string) + "]" if loc.size > 1 else "" %}
-{{ indent }}    {{ loc.modifier }} uint32_t {{ loc.name }}{{ array }};
+{{ indent }}  {{ loc.modifier }} uint32_t {{ loc.name }}{{ array }};
 {%- endfor %}
 {%- if locations | length > 1 %}
   };
@@ -42,4 +42,15 @@ struct {{ periph.name }} {
 
 
 {% endfor %}
+
+
+static inline void nvic_enable_irq(int irq) {
+  volatile uint32_t *reg = &(NVIC->ISER0) + (irq / 32);
+  *reg = 1 << (irq & 0x1F);
+}
+
+static inline void nvic_disable_irq(int irq) {
+  volatile uint32_t *reg = &(NVIC->ICER0) + (irq / 32);
+  *reg = 1 << (irq & 0x1F);
+}
 #endif
