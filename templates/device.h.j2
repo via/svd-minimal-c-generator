@@ -28,15 +28,17 @@ struct {{ periph.name }} {
 {%- endfor %}
 };
 
+{% if periph.group and periph.generate_defines %}
 {%- for pos, locations in periph.locations | dictsort %}
 {%- for reg in locations %}
 {%- for field in reg.fields %} 
 {%- set value = (2 ** field.bit_width) - 1 %}
-#define {{ periph.name }}_{{ reg.name }}_{{ field.name }}          (0x{{ "{:X}".format(value) }}UL << {{ field.bit_offset }}) 
-#define {{ periph.name }}_{{ reg.name }}_{{ field.name }}_VAL(X) (((uint32_t)(X) & 0x{{ "{:X}".format(value) }}UL) << {{ field.bit_offset }}) 
+#define {{ periph.group }}_{{ reg.name }}_{{ field.name }}          (0x{{ "{:X}".format(value) }}UL << {{ field.bit_offset }}) 
+#define {{ periph.group }}_{{ reg.name }}_{{ field.name }}_VAL(X) (((uint32_t)(X) & 0x{{ "{:X}".format(value) }}UL) << {{ field.bit_offset }}) 
 {%- endfor %}
 {%- endfor %}
 {%- endfor %}
+{%- endif %}
 
 #define {{ periph.name }}  ((struct {{ periph.name }}*)(0x{{ "{:X}".format(periph.base_address) }}UL))
 

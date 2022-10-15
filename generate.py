@@ -1,13 +1,10 @@
 from cmsis_svd.parser import SVDParser, SVDRegister, SVDField, SVDPeripheral
 from jinja2 import Environment, FileSystemLoader
 import json
+import sys
 
-
-
-
-parser = SVDParser.for_xml_file('STM32H743.svd')
+parser = SVDParser.for_xml_file(sys.argv[1])
 device = parser.get_device()
-
 
 def enumerate_interrupts(device):
   interrupts = set()
@@ -52,6 +49,8 @@ class Peripheral:
    def __init__(self, periph: SVDPeripheral):
      self.name = periph.name
      self.base_address = periph.base_address
+     self.group = periph.group_name
+     self.generate_defines = True if periph.derived_from is None else False
      self.locations = {}
      for register in periph.registers:
        reg = Register(register)
